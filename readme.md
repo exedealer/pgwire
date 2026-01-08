@@ -1,6 +1,6 @@
 # pgwire is
 
-[![JSR](https://jsr.io/badges/@kagis/pgwire)](https://jsr.io/@kagis/pgwire)
+[![JSR](https://jsr.io/badges/@exedealer/pgwire)](https://jsr.io/@exedealer/pgwire)
 [![NPM](https://img.shields.io/npm/v/pgwire.svg)](https://www.npmjs.com/package/pgwire)
 
 PostgreSQL client library for Deno and Node.js that exposes all features of wire protocol.
@@ -18,7 +18,7 @@ PostgreSQL client library for Deno and Node.js that exposes all features of wire
 # Create connection
 
 ```js
-import { pgconnection } from 'https://raw.githubusercontent.com/kagis/pgwire/main/mod.js';
+import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 //                                   use exact commit or tag instead of main ^^^^
 const pg = pgconnection('postgres://USER:PASSWORD@HOST:PORT/DATABASE');
 ```
@@ -29,7 +29,7 @@ Good practice is to get connection URI from environment variable:
 
 ```js
 // app.js
-import { pgconnection } from 'https://raw.githubusercontent.com/kagis/pgwire/main/mod.js';
+import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 const pg = pgconnection(Deno.env.get('POSTGRES'));
 ```
 
@@ -75,7 +75,7 @@ try {
 
 ```js
 // app.js
-import { pgpool } from 'https://raw.githubusercontent.com/kagis/pgwire/main/mod.js';
+import { pgpool } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 
 const pg = pgpool(Deno.env.get('POSTGRES'));
 try {
@@ -360,7 +360,7 @@ TRUNCATE foo;
 Now we are ready to consume replication messages:
 
 ```js
-import { pgconnection } from 'https://raw.githubusercontent.com/kagis/pgwire/main/mod.js';
+import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 
 const pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
 try {
@@ -397,7 +397,7 @@ SELECT pg_create_logical_replication_slot(
 ```
 
 ```js
-import { pgconnection } from 'https://raw.githubusercontent.com/kagis/pgwire/main/mod.js';
+import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 
 const pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
 try {
@@ -591,3 +591,13 @@ for await (const chunk of replstream.pgoutputDecode()) {
   }
 }
 ```
+
+# Sponsorship
+
+If you find this project useful, consider supporting its development!
+Your contributions help maintain and improve the project.
+
+[![PayPal](https://img.shields.io/badge/paypal-donate-blue?logo=paypal&logoColor=white&style=for-the-badge)](https://paypal.me/exedealer)
+
+[![Ko-fi](https://img.shields.io/badge/ko--fi-donate-blue?logo=ko-fi&logoColor=white&style=for-the-badge
+)](https://ko-fi.com/exedealer)

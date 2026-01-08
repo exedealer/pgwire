@@ -1,6 +1,6 @@
 {
-  "name": "@kagis/pgwire",
-  "version": "0.8.2",
+  "name": "@exedealer/pgwire",
+  "version": "0.8.3",
   "exports": "./mod.js",
   "license": "MIT",
   "publish": {
