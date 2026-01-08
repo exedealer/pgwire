@@ -1,7 +1,7 @@
-# pgwire is
+# pgwire
 
-[![JSR](https://jsr.io/badges/@exedealer/pgwire)](https://jsr.io/@exedealer/pgwire)
-[![NPM](https://img.shields.io/npm/v/pgwire.svg)](https://www.npmjs.com/package/pgwire)
+[![NPM](https://img.shields.io/npm/v/pgwire?style=flat-square)](https://www.npmjs.com/package/pgwire)
+[![JSR](https://img.shields.io/jsr/v/@exedealer/pgwire?style=flat-square&color=yellow)](https://jsr.io/@exedealer/pgwire)
 
 PostgreSQL client library for Deno and Node.js that exposes all features of wire protocol.
 
@@ -19,11 +19,11 @@ PostgreSQL client library for Deno and Node.js that exposes all features of wire
 
 ```js
 import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
-//                                   use exact commit or tag instead of main ^^^^
+//                                       use exact commit or tag instead of main ^^^^
 const pg = pgconnection('postgres://USER:PASSWORD@HOST:PORT/DATABASE');
 ```
 
-https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-CONNSTRING-URIS
+https://www.postgresql.org/docs/18/libpq-connect.html#LIBPQ-CONNSTRING-URIS
 
 Good practice is to get connection URI from environment variable:
 
@@ -69,6 +69,10 @@ try {
 } finally {
   await pg.end();
 }
+
+// or just
+await using pg = pgconnection(Deno.env.get('POSTGRES'));
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/await_using
 ```
 
 # Using pgwire in web server
@@ -77,17 +81,13 @@ try {
 // app.js
 import { pgpool } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
 
-const pg = pgpool(Deno.env.get('POSTGRES'));
-try {
-  const websrv = Deno.serve({
-    handler(_req) {
-      const [greeting] = await pg.query(`SELECT 'hello world, ' || now()`);
-      return new Response(greeting);
-    },
-  });
-  await websrv.finished;
-} finally {
-  await pg.end();
+await using pg = pgpool(Deno.env.get('POSTGRES'));
+const websrv = Deno.serve({ handler });
+await websrv.finished;
+
+async function handler(req) {
+  const [greeting] = await pg.query(`SELECT 'hello world, ' || now()`);
+  return new Response(greeting);
 }
 ```
 
@@ -179,7 +179,7 @@ assertEquals(products, [
 ]);
 ```
 
-Postgres wraps multi-statement query into transaction implicitly. Implicit transaction does rollback automatically when error occures or does commit when all statements successfully executed. Multi-statement queries and implicit transactions are described here https://www.postgresql.org/docs/16/protocol-flow.html#PROTOCOL-FLOW-MULTI-STATEMENT
+Postgres wraps multi-statement query into transaction implicitly. Implicit transaction does rollback automatically when error occures or does commit when all statements successfully executed. Multi-statement queries and implicit transactions are described here https://www.postgresql.org/docs/18/protocol-flow.html#PROTOCOL-FLOW-MULTI-STATEMENT
 
 Top level `rows` accessor will contain rows returned by last SELECTish statement.
 Iterator accessor will iterate over first row returned by last SELECTish statement.
@@ -270,7 +270,7 @@ assertEquals(result,
 
 # Listen and Notify
 
-https://www.postgresql.org/docs/11/sql-notify.html
+https://www.postgresql.org/docs/18/sql-notify.html
 
 ```js
 pg.onnotification = ({ pid, channel, payload }) => {
@@ -329,7 +329,7 @@ await pg.query({
 
 # Logical replication
 
-Logical replication is native PostgreSQL mechanism which allows your app to subscribe on data modification events such as insert, update, delete and truncate. This mechanism can be useful in different ways - replicas synchronization, cache invalidation or history tracking. https://www.postgresql.org/docs/11/logical-replication.html
+Logical replication is native PostgreSQL mechanism which allows your app to subscribe on data modification events such as insert, update, delete and truncate. This mechanism can be useful in different ways - replicas synchronization, cache invalidation or history tracking. https://www.postgresql.org/docs/18/logical-replication.html
 
 Lets prepare database for logical replication. At first we need to configure PostgreSQL server to write enough information to WAL:
 
@@ -360,21 +360,15 @@ TRUNCATE foo;
 Now we are ready to consume replication messages:
 
 ```js
-import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
-
-const pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
-try {
-  const replicationStream = pg.logicalReplication({ slot: 'my-app-slot' });
-  const utf8dec = new TextDecoder();
-  for await (const { lastLsn, messages } of replicationStream) {
-    for (const { lsn, data } of messages) {
-      // consume message somehow
-      console.log(lsn, utf8dec.decode(data));
-    }
-    replicationStream.ack(lastLsn);
+using await pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
+const replicationStream = pg.logicalReplication({ slot: 'my-app-slot' });
+const utf8dec = new TextDecoder();
+for await (const { lastLsn, messages } of replicationStream) {
+  for (const { lsn, data } of messages) {
+    // consume message somehow
+    console.log(lsn, utf8dec.decode(data));
   }
-} finally {
-  await pg.end();
+  replicationStream.ack(lastLsn);
 }
 ```
 
@@ -397,25 +391,19 @@ SELECT pg_create_logical_replication_slot(
 ```
 
 ```js
-import { pgconnection } from 'https://raw.githubusercontent.com/exedealer/pgwire/main/mod.js';
-
-const pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
-try {
-  const replicationStream = pg.logicalReplication({
-    slot: 'my-app-slot',
-    options: {
-      'proto_version': 1,
-      'publication_names': 'my-app-pub',
-    },
-  });
-  for await (const { lastLsn, messages } of replicationStream.pgoutputDecode()) {
-    for (const pgomsg of messages) {
-      // consume pgomsg
-    }
-    replicationStream.ack(lastLsn);
+await using pg = pgconnection({ replication: 'database' }, Deno.env.get('POSTGRES'));
+const replicationStream = pg.logicalReplication({
+  slot: 'my-app-slot',
+  options: {
+    'proto_version': 2,
+    'publication_names': 'my-app-pub',
+  },
+});
+for await (const { lastLsn, messages } of replicationStream.pgoutputDecode()) {
+  for (const pgomsg of messages) {
+    // consume pgomsg
   }
-} finally {
-  await pg.end();
+  replicationStream.ack(lastLsn);
 }
 ```
 
@@ -518,7 +506,7 @@ for await (const chunk of replstream.pgoutputDecode()) {
         // (string) Relation (table) name
         pgomsg.name:
         // ('default' | 'nothing'| 'full' | 'index')
-        // https://www.postgresql.org/docs/14/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY
+        // https://www.postgresql.org/docs/18/sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY
         pgomsg.replicaIdentity;
         // (object[]) Relation columns descriptions
         for (const column of pgomsg.columns) {
@@ -551,7 +539,7 @@ for await (const chunk of replstream.pgoutputDecode()) {
         // (object) Row values after update.
         // If pgomsg.relation.replicaIdentity != 'full'
         // then unchanged TOASTed values will be undefined.
-        // https://www.postgresql.org/docs/14/storage-toast.html
+        // https://www.postgresql.org/docs/18/storage-toast.html
         pgomsg.after;
 
       case 'delete':
