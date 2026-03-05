@@ -13,6 +13,7 @@ PostgreSQL client library for Deno and Node.js that exposes all features of wire
 - Listen/Notify
 - Query pipelining, single round trip
 - Efficient bytea transferring
+- OOM protected
 - Pure js without dependencies
 
 # Create connection
